@@ -20,6 +20,10 @@ function SignupContent() {
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [showOtp, setShowOtp] = useState(false)
+  const [otp, setOtp] = useState('')
+  const [otpError, setOtpError] = useState('')
+  const [otpLoading, setOtpLoading] = useState(false)
 
   // Real-time debounced username availability checker
   useEffect(() => {
@@ -29,38 +33,60 @@ function SignupContent() {
       setUsernameMessage('')
       return
     }
+
     if (trimmed.length < 3) {
       setUsernameStatus('invalid')
       setUsernameMessage('Username must be at least 3 characters long.')
       return
     }
+
     if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) {
       setUsernameStatus('invalid')
       setUsernameMessage('Username can only contain letters, numbers, and underscores.')
       return
     }
+
     setUsernameStatus('checking')
     setUsernameMessage('Checking availability...')
+
     const timer = setTimeout(async () => {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('profiles')
           .select('id')
           .eq('username', trimmed)
           .maybeSingle()
+
+        if (error) {
+          console.error("Availability check error:", error)
+          return
+        }
+
         if (data) {
           setUsernameStatus('taken')
-          setUsernameMessage('✗ This username is already taken.')
+          setUsernameMessage('This username is already taken.')
         } else {
           setUsernameStatus('available')
-          setUsernameMessage('✓ Username is available!')
+          setUsernameMessage('Username is available!')
         }
       } catch (err) {
-        console.error('Availability check error:', err)
+        console.error("Availability check error:", err)
       }
-    }, 350)
+    }, 500)
+
     return () => clearTimeout(timer)
-  }, [username])
+  }, [username, supabase])
+
+  // Force dark theme on this page always
+  useEffect(() => {
+    document.documentElement.classList.add('dark')
+    return () => {
+      const savedTheme = localStorage.getItem('theme')
+      if (savedTheme === 'light') {
+        document.documentElement.classList.remove('dark')
+      }
+    }
+  }, [])
 
   useEffect(() => {
     const errorParam = searchParams.get('error')
@@ -78,31 +104,15 @@ function SignupContent() {
 
   const handleGoogleSignup = async () => {
     setError('')
-    const trimmedUsername = username.trim().toLowerCase()
-    
-    if (!trimmedUsername) {
-      setError('Please choose a username first to sign up with Google.')
-      return
-    }
-
-    if (usernameStatus === 'taken') {
-      setError('This username is already taken. Please choose another one.')
-      return
-    }
-    if (usernameStatus === 'checking') {
-      setError('Checking username availability... Please wait.')
-      return
-    }
-    if (usernameStatus === 'invalid') {
-      setError(usernameMessage)
-      return
-    }
-
     setLoading(true)
 
-    try {
-      localStorage.setItem('pycode_signup_username', trimmedUsername)
-    } catch {}
+    // Save intended username to local storage to apply after OAuth callback succeeds
+    const trimmedUsername = username.trim().toLowerCase()
+    if (trimmedUsername) {
+      try {
+        localStorage.setItem('pycode_signup_username', trimmedUsername)
+      } catch {}
+    }
 
     const client_id = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""
     const redirect_uri = `${window.location.origin}/auth/callback/google`
@@ -133,11 +143,13 @@ function SignupContent() {
       setLoading(false)
       return
     }
+
     if (usernameStatus === 'checking') {
       setError('Checking username availability... Please wait.')
       setLoading(false)
       return
     }
+
     if (usernameStatus === 'invalid') {
       setError(usernameMessage)
       setLoading(false)
@@ -168,8 +180,38 @@ function SignupContent() {
     }
 
     if (signUpData.user) {
-      // By default, newly registered teachers are NOT verified (is_teacher = false).
-      // They must log in, which redirects them to the /verify screen, to upload ID credentials.
+      setShowOtp(true)
+    }
+    setLoading(false)
+  }
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setOtpError('')
+    setOtpLoading(true)
+
+    const trimmedEmail = email.trim().toLowerCase()
+    const trimmedUsername = username.trim().toLowerCase()
+    const trimmedOtp = otp.trim()
+
+    if (trimmedOtp.length !== 6) {
+      setOtpError('Please enter a valid 6-digit verification code.')
+      setOtpLoading(false)
+      return
+    }
+
+    try {
+      const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+        email: trimmedEmail,
+        token: trimmedOtp,
+        type: 'signup'
+      })
+
+      if (verifyError) {
+        throw verifyError
+      }
+
+      // Update profiles with username
       try {
         const res = await fetch('/api/auth/update-profile', {
           method: 'POST',
@@ -186,27 +228,74 @@ function SignupContent() {
         console.error("Error setting username:", err)
       }
 
-      setSuccess(true)
+      // Redirect to dashboard
+      router.push('/dashboard')
+    } catch (err: any) {
+      setOtpError(err.message || 'OTP verification failed. Please check the code and try again.')
+      setOtpLoading(false)
     }
-    setLoading(false)
   }
 
-  if (success) {
+  const handleBackToSignup = () => {
+    setShowOtp(false)
+    setOtp('')
+    setOtpError('')
+  }
+
+  if (showOtp) {
     return (
-      <div className="min-h-screen bg-canvas flex items-center justify-center font-sans text-ink px-4">
-        <div className="max-w-md w-full p-8 rounded-3xl bg-canvas border border-hairline text-center shadow-[0_4px_16px_rgba(0,0,0,0.06)] animate-scale-in">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-block-mint border border-hairline flex items-center justify-center">
-            <svg className="w-8 h-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
+      <div className="min-h-screen bg-canvas flex items-center justify-center font-sans text-ink px-4 relative">
+        <div className="max-w-md w-full p-8 rounded-3xl bg-canvas border border-hairline shadow-[0_4px_16px_rgba(0,0,0,0.06)] animate-scale-in">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-extrabold tracking-tight text-ink font-sans">
+              Verify Your Email
+            </h1>
+            <p className="text-gray-500 text-sm mt-2 font-light leading-relaxed">
+              We have sent a 6-digit verification code to <span className="text-ink font-semibold">{email}</span>. Please enter it below to activate your account.
+            </p>
           </div>
-          <h2 className="text-2xl font-bold mb-2">Check your email!</h2>
-          <p className="text-gray-500 text-sm mb-6 leading-relaxed">
-            We&apos;ve sent a verification link to <span className="text-ink font-semibold">{email}</span>. Click the link to activate your account and start creating tests.
-          </p>
-          <Link href="/login" className="text-primary font-semibold hover:underline text-sm">
-            &larr; Back to login
-          </Link>
+
+          {otpError && (
+            <div className="mb-4 p-3 rounded-xl bg-error/10 border border-error/25 text-error text-sm animate-scale-in font-light">
+              {otpError}
+            </div>
+          )}
+
+          <form onSubmit={handleVerifyOtp} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider font-mono">Verification Code</label>
+              <input
+                type="text"
+                maxLength={6}
+                pattern="[0-9]*"
+                inputMode="numeric"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                placeholder="Enter 6-digit code"
+                className="w-full px-4 py-2.5 bg-canvas border border-hairline rounded-xl text-ink placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all text-sm font-mono tracking-widest text-center text-lg"
+                required
+                disabled={otpLoading}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={otpLoading}
+              className="w-full py-3 rounded-full bg-primary hover:opacity-90 text-on-primary font-semibold transition-all text-sm cursor-pointer disabled:opacity-50"
+            >
+              {otpLoading ? 'Verifying...' : 'Verify & Register'}
+            </button>
+          </form>
+
+          <div className="text-center mt-6">
+            <button
+              type="button"
+              onClick={handleBackToSignup}
+              className="text-xs text-gray-500 hover:text-ink font-semibold cursor-pointer"
+            >
+              &larr; Change email or details
+            </button>
+          </div>
         </div>
       </div>
     )
