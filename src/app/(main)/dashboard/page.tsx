@@ -57,6 +57,18 @@ function generateExplanation(code: string): string[] {
   })
 }
 
+function getQuestionTotalCases(verificationScript?: string): number {
+  if (!verificationScript) return 5
+  const match = verificationScript.match(/exec_globals\[["']total_cases["']\]\s*=\s*(\d+)/)
+  if (match) {
+    return parseInt(match[1], 10)
+  }
+  if (!verificationScript.includes('fn = exec_globals') && !verificationScript.includes('assert fn(')) {
+    return 1
+  }
+  return 5
+}
+
 export default function TeacherDashboardPage() {
   const supabase = createClient() as any
   const [codeathons, setCodeathons] = useState<any[]>([])
@@ -154,7 +166,7 @@ export default function TeacherDashboardPage() {
       if (codingQuestionIds.length > 0) {
         const { data: qData } = await supabase
           .from('coding_questions')
-          .select('id, title, points')
+          .select('id, title, points, verification_script')
           .in('id', codingQuestionIds)
         if (qData) {
           setQuestions(qData)
@@ -374,11 +386,13 @@ export default function TeacherDashboardPage() {
     let passedCases = 0
     let totalPossibleCases = 0
 
-    Object.keys(summary).forEach((qId) => {
-      const check = summary[qId]
-      passedCases += check.passed || 0
-      totalPossibleCases += check.total || 0
-      if (check.passed === check.total && check.total > 0) {
+    questions.forEach((q: any) => {
+      const qTotal = getQuestionTotalCases(q.verification_script)
+      const check = summary[q.id]
+      const passed = check ? (check.passed || 0) : 0
+      passedCases += passed
+      totalPossibleCases += qTotal
+      if (passed === qTotal && qTotal > 0) {
         solvedCount++
       }
     })
