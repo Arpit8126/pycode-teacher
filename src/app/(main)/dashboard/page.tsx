@@ -565,7 +565,7 @@ export default function TeacherDashboardPage() {
           const dateStr = `${yyyy}-${mm}-${dd}`
           const count = viewedStudentHeatmap[dateStr] || 0
 
-          let color = 'bg-gray-200 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-600'
+          let color = 'bg-gray-200 dark:bg-zinc-800 border border-gray-300 dark:border-hairline-soft hover:border-gray-400 dark:hover:border-hairline'
           if (count === 1) color = 'bg-emerald-200 dark:bg-emerald-900/80 border-emerald-300 dark:border-emerald-700 hover:border-emerald-400 dark:hover:border-emerald-500'
           if (count === 2) color = 'bg-emerald-400 dark:bg-emerald-700 border-emerald-500 dark:border-emerald-600 hover:border-emerald-600 dark:hover:border-emerald-400'
           if (count >= 3) color = 'bg-emerald-600 dark:bg-emerald-500 border-emerald-700 dark:border-emerald-400 hover:border-emerald-700 dark:hover:border-emerald-300'
@@ -752,7 +752,7 @@ export default function TeacherDashboardPage() {
             </div>
 
             {/* Card 2: Student Profile Card */}
-            <div className="p-6 rounded-3xl bg-block-lilac border border-hairline flex flex-col justify-between shadow-[0_4px_16px_rgba(0,0,0,0.06)] min-h-[200px] relative">
+            <div className="p-6 rounded-3xl bg-canvas border border-hairline flex flex-col justify-between shadow-[0_4px_16px_rgba(0,0,0,0.06)] min-h-[200px] relative">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest font-mono">Student Profile</h3>
                 <button
@@ -835,7 +835,7 @@ export default function TeacherDashboardPage() {
                   <p>Submission history logs for the year 2026</p>
                   <div className="flex items-center gap-1.5 font-semibold">
                     <span>Less</span>
-                    <div className="w-3 h-3 rounded-sm bg-gray-200 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700" />
+                    <div className="w-3 h-3 rounded-sm bg-gray-200 dark:bg-zinc-800 border border-gray-300 dark:border-hairline-soft" />
                     <div className="w-3 h-3 rounded-sm bg-emerald-200 dark:bg-emerald-900" />
                     <div className="w-3 h-3 rounded-sm bg-emerald-400 dark:bg-emerald-700" />
                     <div className="w-3 h-3 rounded-sm bg-emerald-600 dark:bg-emerald-500" />
