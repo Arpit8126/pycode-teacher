@@ -159,7 +159,7 @@ export default function TeacherDashboardPage() {
   }
 
   // Load detailed attempts and questions for the active analytics scoreboard
-  const loadAttempts = async (codeathonId: string, codingQuestionIds: number[] = []) => {
+  const loadAttempts = async (codeathonId: string, codingQuestionIds: number[] = [], codeathon?: any) => {
     setLoadingAttempts(true)
     try {
       // 1. Fetch questions of this quiz to know categories and points
@@ -203,6 +203,59 @@ export default function TeacherDashboardPage() {
         }))
         setAttempts(enrichedAttempts)
       }
+
+      // Auto-sweep: if quiz has ended, finalize all incomplete attempts
+      const quizEndTime = codeathon?.end_time || selectedCodeathon?.end_time
+      if (quizEndTime && new Date(quizEndTime).getTime() < Date.now()) {
+        try {
+          // Directly sweep via Supabase admin (teacher has service role access via RLS)
+          const { data: incompleteAttempts } = await supabase
+            .from('quiz_attempts')
+            .select('id, user_id, student_details, warnings_count, is_disqualified')
+            .eq('quiz_id', codeathonId)
+            .is('completed_at', null)
+
+          if (incompleteAttempts && incompleteAttempts.length > 0) {
+            const completedAt = new Date().toISOString()
+            // Fetch questions for score calc
+            const qIds = (await supabase.from('quizzes').select('coding_question_ids').eq('id', codeathonId).maybeSingle())?.data?.coding_question_ids || []
+            const { data: qs } = qIds.length > 0 ? await supabase.from('coding_questions').select('id, points, verification_script').in('id', qIds) : { data: [] }
+            const qList: any[] = qs || []
+
+            await Promise.all(incompleteAttempts.map(async (attempt: any) => {
+              const submittedQs: Record<string, boolean> = attempt.student_details?.submittedQuestions || {}
+              const savedSummary: Record<string, { passed: number; total: number }> = attempt.student_details?.testCasesSummary || {}
+              let totalPoints = 0; let earnedPoints = 0
+              const finalSummary: Record<number, { passed: number; total: number }> = {}
+              qList.forEach((q: any) => {
+                totalPoints += q.points
+                const saved = savedSummary[q.id]
+                const qTotal = (saved && saved.total > 0) ? saved.total : getQuestionTotalCases(q.verification_script)
+                const qPassed = (!!submittedQs[q.id] && saved) ? (saved.passed || 0) : 0
+                if (!!submittedQs[q.id] && saved && saved.total > 0) earnedPoints += (saved.passed / saved.total) * q.points
+                finalSummary[q.id] = { passed: qPassed, total: qTotal }
+              })
+              const scorePercentage = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0
+              const isDisq = attempt.is_disqualified || (attempt.warnings_count || 0) >= 3
+              await supabase.from('quiz_attempts').update({
+                completed_at: completedAt,
+                score: isDisq ? 0 : Math.round(earnedPoints),
+                score_percentage: isDisq ? 0 : scorePercentage,
+                student_details: { ...attempt.student_details, testCasesSummary: finalSummary }
+              }).eq('id', attempt.id)
+            }))
+
+            // Reload attempts after sweep
+            const { data: freshAttempts } = await supabase
+              .from('quiz_attempts')
+              .select('*, profiles:user_id(username, full_name)')
+              .eq('quiz_id', codeathonId)
+            if (freshAttempts) setAttempts(freshAttempts)
+          }
+        } catch (sweepErr) {
+          console.warn('Auto-sweep warning (non-blocking):', sweepErr)
+        }
+      }
     } catch (err) {
       console.error('Failed to load scoreboard analytics:', err)
     } finally {
@@ -229,7 +282,7 @@ export default function TeacherDashboardPage() {
           filter: `quiz_id=eq.${selectedCodeathon.id}`
         },
         () => {
-          loadAttempts(selectedCodeathon.id, selectedCodeathon.coding_question_ids)
+          loadAttempts(selectedCodeathon.id, selectedCodeathon.coding_question_ids, selectedCodeathon)
         }
       )
       .subscribe()
@@ -242,7 +295,7 @@ export default function TeacherDashboardPage() {
   const handleOpenAnalytics = async (quiz: any) => {
     setSelectedCodeathon(quiz)
     setShowAnalytics(true)
-    await loadAttempts(quiz.id, quiz.coding_question_ids)
+    await loadAttempts(quiz.id, quiz.coding_question_ids, quiz)
   }
 
   const handleCloseAnalytics = () => {
@@ -1237,13 +1290,17 @@ export default function TeacherDashboardPage() {
                             <span className="px-2 py-0.5 rounded-md bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-455 font-mono text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">
                               Disqualified
                             </span>
-                          ) : candidate.completedAt === 'N/A' ? (
-                            <span className="px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-450 font-mono text-[9px] font-bold uppercase tracking-wider animate-pulse whitespace-nowrap">
-                              Attempting
-                            </span>
-                          ) : (
+                          ) : candidate.completedAt !== 'N/A' ? (
                             <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-450 font-mono text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">
                               Normal
+                            </span>
+                          ) : new Date(selectedCodeathon?.end_time || 0) < new Date() ? (
+                            <span className="px-2 py-0.5 rounded-md bg-zinc-500/10 border border-zinc-500/20 text-zinc-500 dark:text-zinc-400 font-mono text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">
+                              Not Submitted
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-450 font-mono text-[9px] font-bold uppercase tracking-wider animate-pulse whitespace-nowrap">
+                              Attempting
                             </span>
                           )}
                         </td>
