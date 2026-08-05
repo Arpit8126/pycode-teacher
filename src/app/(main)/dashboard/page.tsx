@@ -402,7 +402,7 @@ export default function TeacherDashboardPage() {
 
   // Calculate detailed aggregates for active scoreboard
   const totalAttempted = attempts.length
-  const completedAttemptsCount = attempts.filter(a => a.completed_at && !a.is_disqualified).length
+  const completedAttemptsCount = attempts.filter(a => a.completed_at).length
   const totalQuizPoints = questions.reduce((acc, q) => acc + (q.points || 0), 0)
   const totalQuestionsCount = questions.length
 
@@ -435,14 +435,13 @@ export default function TeacherDashboardPage() {
     if (a.completed_at) {
       if (a.is_disqualified) {
         disqualifiedCount++
-      } else {
-        maxCorrected = Math.max(maxCorrected, solvedCount)
-        totalCorrected += solvedCount
-        maxPassedCases = Math.max(maxPassedCases, passedCases)
-        totalPassedCases += passedCases
-        maxScore = Math.max(maxScore, a.score || 0)
-        sumScore += (a.score || 0)
       }
+      maxCorrected = Math.max(maxCorrected, solvedCount)
+      totalCorrected += solvedCount
+      maxPassedCases = Math.max(maxPassedCases, passedCases)
+      totalPassedCases += passedCases
+      maxScore = Math.max(maxScore, a.score || 0)
+      sumScore += (a.score || 0)
     }
 
     // Calculate time taken duration

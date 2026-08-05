@@ -84,8 +84,9 @@ export async function sweepIncompleteAttempts(codeathonId: number | string) {
         .from('quiz_attempts')
         .update({
           completed_at: completedAt,
-          score: isDisq ? 0 : Math.round(earnedPoints),
-          score_percentage: isDisq ? 0 : scorePercentage,
+          score: Math.round(earnedPoints),
+          score_percentage: scorePercentage,
+          is_disqualified: isDisq,
           student_details: { ...attempt.student_details, testCasesSummary: finalSummary }
         })
         .eq('id', attempt.id)
