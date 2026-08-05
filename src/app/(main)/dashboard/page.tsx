@@ -58,15 +58,30 @@ function generateExplanation(code: string): string[] {
 }
 
 function getQuestionTotalCases(verificationScript?: string): number {
-  if (!verificationScript) return 5
-  const match = verificationScript.match(/exec_globals\[["']total_cases["']\]\s*=\s*(\d+)/)
-  if (match) {
-    return parseInt(match[1], 10)
+  if (!verificationScript) return 1
+  
+  // 1. Check for literal assignment to total_cases in exec_globals, e.g. exec_globals['total_cases'] = 3
+  const literalMatch = verificationScript.match(/exec_globals\[["']total_cases["']\]\s*=\s*(\d+)/)
+  if (literalMatch) {
+    return parseInt(literalMatch[1], 10)
   }
+  
+  // 2. Check for literal assignment to total variable: e.g. total = 3 (avoiding total = 0)
+  const totalMatches = verificationScript.match(/^\s*total\s*=\s*([1-9]\d*)/m)
+  if (totalMatches) {
+    return parseInt(totalMatches[1], 10)
+  }
+  
+  // 3. Count increments to total: total += 1
+  const totalIncMatches = verificationScript.match(/total\s*\+=\s*1/g)
+  if (totalIncMatches && totalIncMatches.length > 0) {
+    return totalIncMatches.length
+  }
+  
   if (!verificationScript.includes('fn = exec_globals') && !verificationScript.includes('assert fn(')) {
     return 1
   }
-  return 5
+  return 1
 }
 
 export default function TeacherDashboardPage() {
@@ -440,12 +455,12 @@ export default function TeacherDashboardPage() {
     let totalPossibleCases = 0
 
     questions.forEach((q: any) => {
-      const qTotal = getQuestionTotalCases(q.verification_script)
       const check = summary[q.id]
       const passed = check ? (check.passed || 0) : 0
+      const total = (check && check.total > 0) ? check.total : getQuestionTotalCases(q.verification_script)
       passedCases += passed
-      totalPossibleCases += qTotal
-      if (passed === qTotal && qTotal > 0) {
+      totalPossibleCases += total
+      if (total > 0 && passed === total) {
         solvedCount++
       }
     })
