@@ -457,7 +457,7 @@ export default function TeacherDashboardPage() {
     questions.forEach((q: any) => {
       const check = summary[q.id]
       const passed = check ? (check.passed || 0) : 0
-      const total = (check && check.total > 0) ? check.total : getQuestionTotalCases(q.verification_script)
+      const total = getQuestionTotalCases(q.verification_script)
       passedCases += passed
       totalPossibleCases += total
       if (total > 0 && passed === total) {
