@@ -78,7 +78,7 @@ export async function sweepIncompleteAttempts(codeathonId: number | string) {
       })
 
       const scorePercentage = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0
-      const isDisq = attempt.is_disqualified || (attempt.warnings_count || 0) >= 3
+      const isDisq = attempt.is_disqualified || (attempt.warnings_count || 0) >= 2
 
       const { error } = await supabase
         .from('quiz_attempts')

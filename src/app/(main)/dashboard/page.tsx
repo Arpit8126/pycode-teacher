@@ -401,7 +401,8 @@ export default function TeacherDashboardPage() {
   }
 
   // Calculate detailed aggregates for active scoreboard
-  const totalAttempted = attempts.filter(a => a.completed_at).length
+  const totalAttempted = attempts.length
+  const completedAttemptsCount = attempts.filter(a => a.completed_at).length
   const totalQuizPoints = questions.reduce((acc, q) => acc + (q.points || 0), 0)
   const totalQuestionsCount = questions.length
 
@@ -496,9 +497,9 @@ export default function TeacherDashboardPage() {
     return getSecs(x.timeTakenStr) - getSecs(y.timeTakenStr)
   })
 
-  const avgCorrected = totalAttempted > 0 ? (totalCorrected / totalAttempted).toFixed(1) : '0.0'
-  const avgPassedCases = totalAttempted > 0 ? (totalPassedCases / totalAttempted).toFixed(1) : '0.0'
-  const avgScore = totalAttempted > 0 ? (sumScore / totalAttempted).toFixed(1) : '0.0'
+  const avgCorrected = completedAttemptsCount > 0 ? (totalCorrected / completedAttemptsCount).toFixed(1) : '0.0'
+  const avgPassedCases = completedAttemptsCount > 0 ? (totalPassedCases / completedAttemptsCount).toFixed(1) : '0.0'
+  const avgScore = completedAttemptsCount > 0 ? (sumScore / completedAttemptsCount).toFixed(1) : '0.0'
 
   // Print scorecard to PDF
   const handlePrintPDF = () => {
@@ -1257,7 +1258,7 @@ export default function TeacherDashboardPage() {
                         <td className="px-4 py-3 font-bold font-mono text-gray-900 dark:text-gray-100 whitespace-nowrap print-nowrap">{candidate.score} / {totalQuizPoints}</td>
                         <td className="px-4 py-3 font-mono text-gray-900 dark:text-gray-100 whitespace-nowrap">{candidate.solvedCount} / {totalQuestionsCount}</td>
                         <td className="px-4 py-3 font-mono text-gray-900 dark:text-gray-100 whitespace-nowrap">{candidate.passedCases} / {candidate.totalPossibleCases}</td>
-                        <td className="px-4 py-3 text-center font-bold font-mono text-amber-600 dark:text-amber-500 whitespace-nowrap print-nowrap">{candidate.warningsCount}</td>
+                        <td className={`px-4 py-3 text-center font-bold font-mono whitespace-nowrap print-nowrap ${candidate.warningsCount > 0 ? 'text-amber-600 dark:text-amber-500' : 'text-gray-400 dark:text-zinc-550'}`}>{candidate.warningsCount}</td>
                         <td className="px-4 py-3 font-mono text-gray-900 dark:text-gray-100 whitespace-nowrap print:hidden">{candidate.timeTakenStr}</td>
                         <td className="px-4 py-3 text-[10px] text-gray-900 dark:text-gray-100 font-mono select-text whitespace-nowrap print:hidden">{candidate.startedAt}</td>
                         <td className="px-4 py-3 text-[10px] text-gray-900 dark:text-gray-100 font-mono select-text whitespace-nowrap print:hidden">{candidate.completedAt}</td>
