@@ -17,6 +17,7 @@ export default function CreateCodeathonPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all')
   const [selectedSection, setSelectedSection] = useState<string>('all')
+  const [isSectionDropdownOpen, setIsSectionDropdownOpen] = useState(false)
 
   const categories = [
     { id: 'python-ifelse', name: '1. Control Flow (If/Else)', desc: 'Boolean expressions, relational operators, conditional branching' },
@@ -628,21 +629,59 @@ export default function CreateCodeathonPage() {
                 {/* Filters Toolbar */}
                 <div className="px-5 py-3 border-b border-hairline dark:border-[#1e1e24] bg-white dark:bg-[#0c0c0e] flex flex-wrap gap-3 items-center justify-between">
                   <div className="flex flex-wrap items-center gap-3">
-                    {/* Section/Topic Filter */}
+                    {/* Custom Section/Topic Filter Dropdown */}
                     <div className="relative">
-                      <select
-                        value={selectedSection}
-                        onChange={(e) => setSelectedSection(e.target.value)}
-                        className="appearance-none pl-3 pr-8 py-1.5 bg-canvas dark:bg-[#060608] border border-hairline dark:border-[#1e1e24] rounded-xl text-[10px] font-bold uppercase tracking-widest font-mono text-gray-550 focus:outline-none focus:ring-1 focus:ring-[#cc785c] focus:border-[#cc785c] text-ink dark:text-white transition-all cursor-pointer"
+                      <button
+                        type="button"
+                        onClick={() => setIsSectionDropdownOpen(!isSectionDropdownOpen)}
+                        className="flex items-center justify-between gap-2 pl-3 pr-8 py-1.5 bg-canvas dark:bg-[#060608] border border-hairline dark:border-[#1e1e24] rounded-xl text-[10px] font-bold uppercase tracking-widest font-mono text-gray-550 focus:outline-none focus:ring-1 focus:ring-[#cc785c] focus:border-[#cc785c] text-ink dark:text-white transition-all cursor-pointer select-none"
                       >
-                        <option value="all">All Topics</option>
-                        {categories.map(cat => (
-                          <option key={cat.id} value={cat.id}>
-                            {cat.name.replace(/^\d+\.\s*/, '')}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="w-3.5 h-3.5 text-gray-450 absolute right-2.5 top-2 pointer-events-none" />
+                        <span>
+                          {selectedSection === 'all'
+                            ? 'All Topics'
+                            : categories.find(cat => cat.id === selectedSection)?.name.replace(/^\d+\.\s*/, '')}
+                        </span>
+                        <ChevronDown className="w-3.5 h-3.5 text-gray-450 absolute right-2.5 top-2.5 pointer-events-none" />
+                      </button>
+
+                      {isSectionDropdownOpen && (
+                        <>
+                          {/* Backdrop to close when click outside */}
+                          <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setIsSectionDropdownOpen(false)}
+                          />
+                          <div className="absolute left-0 mt-2 w-64 bg-white dark:bg-[#111216] border border-hairline dark:border-[#232630] rounded-xl shadow-2xl py-1 z-50 animate-fade-in overflow-hidden max-h-80 overflow-y-auto">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedSection('all')
+                                setIsSectionDropdownOpen(false)
+                              }}
+                              className={`w-full px-4 py-2 text-left text-[10px] font-bold uppercase tracking-widest font-mono hover:bg-surface-soft dark:hover:bg-[#1e1e24] transition-colors border-b border-hairline dark:border-[#232630] ${
+                                selectedSection === 'all' ? 'text-[#cc785c]' : 'text-gray-500'
+                              }`}
+                            >
+                              All Topics
+                            </button>
+                            {categories.map((cat) => (
+                              <button
+                                key={cat.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedSection(cat.id)
+                                  setIsSectionDropdownOpen(false)
+                                }}
+                                className={`w-full px-4 py-2 text-left text-[10px] font-bold uppercase tracking-widest font-mono hover:bg-surface-soft dark:hover:bg-[#1e1e24] transition-colors ${
+                                  selectedSection === cat.id ? 'text-[#cc785c]' : 'text-gray-500'
+                                }`}
+                              >
+                                {cat.name.replace(/^\d+\.\s*/, '')}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     {/* Difficulty Filter */}
