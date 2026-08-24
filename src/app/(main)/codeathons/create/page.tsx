@@ -657,34 +657,52 @@ export default function CreateCodeathonPage() {
                       </button>
 
                       {isSectionDropdownOpen && (
-                        <div className="absolute left-0 mt-2 w-64 bg-white dark:bg-[#111216] border border-hairline dark:border-[#232630] rounded-xl shadow-2xl py-1 z-50 animate-fade-in overflow-hidden max-h-80 overflow-y-auto">
+                        <div className="absolute left-0 mt-2 w-64 bg-white dark:bg-[#111216] border border-hairline dark:border-[#232630] rounded-2xl shadow-2xl p-1.5 z-50 animate-fade-in overflow-hidden max-h-80 overflow-y-auto">
                           <button
                             type="button"
                             onClick={() => {
                               setSelectedSection('all')
                               setIsSectionDropdownOpen(false)
                             }}
-                            className={`w-full px-4 py-2 text-left text-[10px] font-bold uppercase tracking-widest font-mono hover:bg-surface-soft dark:hover:bg-[#1e1e24] transition-colors border-b border-hairline dark:border-[#232630] ${
-                              selectedSection === 'all' ? 'text-[#cc785c]' : 'text-gray-500'
+                            className={`w-full px-3.5 py-2 text-left text-xs font-bold rounded-xl transition-all duration-200 flex items-center justify-between ${
+                              selectedSection === 'all'
+                                ? 'bg-[#cc785c]/10 text-[#cc785c] dark:bg-[#cc785c]/15'
+                                : 'text-gray-650 dark:text-gray-400 hover:bg-surface-soft dark:hover:bg-[#1e1e24] hover:text-ink dark:hover:text-white'
                             }`}
                           >
-                            All Topics
+                            <span className="font-sans">All Topics</span>
+                            {selectedSection === 'all' && (
+                              <div className="w-1.5 h-1.5 rounded-full bg-[#cc785c]" />
+                            )}
                           </button>
-                          {categories.map((cat) => (
-                            <button
-                              key={cat.id}
-                              type="button"
-                              onClick={() => {
-                                setSelectedSection(cat.id)
-                                setIsSectionDropdownOpen(false)
-                              }}
-                              className={`w-full px-4 py-2 text-left text-[10px] font-bold uppercase tracking-widest font-mono hover:bg-surface-soft dark:hover:bg-[#1e1e24] transition-colors ${
-                                selectedSection === cat.id ? 'text-[#cc785c]' : 'text-gray-500'
-                              }`}
-                            >
-                              {cat.name.replace(/^\d+\.\s*/, '')}
-                            </button>
-                          ))}
+
+                          <div className="my-1 border-t border-hairline dark:border-[#232630]" />
+
+                          {categories.map((cat) => {
+                            const isSelected = selectedSection === cat.id
+                            return (
+                              <button
+                                key={cat.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedSection(cat.id)
+                                  setIsSectionDropdownOpen(false)
+                                }}
+                                className={`w-full px-3.5 py-2 text-left text-xs font-semibold rounded-xl transition-all duration-200 flex items-center justify-between ${
+                                  isSelected
+                                    ? 'bg-[#cc785c]/10 text-[#cc785c] dark:bg-[#cc785c]/15'
+                                    : 'text-gray-650 dark:text-gray-400 hover:bg-surface-soft dark:hover:bg-[#1e1e24] hover:text-ink dark:hover:text-white'
+                                }`}
+                              >
+                                <span className="font-sans truncate mr-2">
+                                  {cat.name.replace(/^\d+\.\s*/, '')}
+                                </span>
+                                {isSelected && (
+                                  <div className="w-1.5 h-1.5 rounded-full bg-[#cc785c] shrink-0" />
+                                )}
+                              </button>
+                            )
+                          })}
                         </div>
                       )}
                     </div>
