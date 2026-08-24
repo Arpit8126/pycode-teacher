@@ -15,6 +15,8 @@ export default function CreateCodeathonPage() {
   const [questions, setQuestions] = useState<any[]>(LOCAL_QUESTIONS)
   const [loadingQuestions, setLoadingQuestions] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all')
+  const [selectedSection, setSelectedSection] = useState<string>('all')
 
   const categories = [
     { id: 'python-ifelse', name: '1. Control Flow (If/Else)', desc: 'Boolean expressions, relational operators, conditional branching' },
@@ -198,10 +200,13 @@ export default function CreateCodeathonPage() {
     }
   }
 
-  const filteredQuestions = questions.filter((q) =>
-    q.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    q.category.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredQuestions = questions.filter((q) => {
+    const matchSearch = q.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        q.category.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchDiff = selectedDifficulty === 'all' || q.difficulty === selectedDifficulty
+    const matchSection = selectedSection === 'all' || q.category === selectedSection
+    return matchSearch && matchDiff && matchSection
+  })
 
   if (success) {
     return (
@@ -619,6 +624,51 @@ export default function CreateCodeathonPage() {
                     />
                   </div>
                 </div>
+                
+                {/* Filters Toolbar */}
+                <div className="px-5 py-3 border-b border-hairline dark:border-[#1e1e24] bg-white dark:bg-[#0c0c0e] flex flex-wrap gap-3 items-center justify-between">
+                  <div className="flex flex-wrap items-center gap-3">
+                    {/* Section/Topic Filter */}
+                    <div className="relative">
+                      <select
+                        value={selectedSection}
+                        onChange={(e) => setSelectedSection(e.target.value)}
+                        className="appearance-none pl-3 pr-8 py-1.5 bg-canvas dark:bg-[#060608] border border-hairline dark:border-[#1e1e24] rounded-xl text-[10px] font-bold uppercase tracking-widest font-mono text-gray-550 focus:outline-none focus:ring-1 focus:ring-[#cc785c] focus:border-[#cc785c] text-ink dark:text-white transition-all cursor-pointer"
+                      >
+                        <option value="all">All Topics</option>
+                        {categories.map(cat => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name.replace(/^\d+\.\s*/, '')}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="w-3.5 h-3.5 text-gray-450 absolute right-2.5 top-2 pointer-events-none" />
+                    </div>
+
+                    {/* Difficulty Filter */}
+                    <div className="flex items-center gap-1 bg-canvas dark:bg-[#060608] p-0.5 rounded-xl border border-hairline dark:border-[#1e1e24]">
+                      {['all', 'easy', 'medium', 'hard'].map((diff) => (
+                        <button
+                          key={diff}
+                          type="button"
+                          onClick={() => setSelectedDifficulty(diff)}
+                          className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest font-mono cursor-pointer transition-all ${
+                            selectedDifficulty === diff
+                              ? 'bg-[#cc785c] text-white shadow-sm'
+                              : 'text-gray-500 hover:text-ink dark:hover:text-white'
+                          }`}
+                        >
+                          {diff}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Selected count indicator */}
+                  <span className="text-[10px] text-muted font-mono tracking-wider uppercase font-bold">
+                    Matching: {filteredQuestions.length} challenges
+                  </span>
+                </div>
 
                 {/* Challenges listing container */}
                 <div className="p-5 space-y-3 overflow-y-auto max-h-[500px] bg-white dark:bg-[#0c0c0e]">
@@ -640,8 +690,10 @@ export default function CreateCodeathonPage() {
                       <p className="text-xs font-light">No matching questions found in library.</p>
                     </div>
                   ) : (
-                    categories.map((cat) => {
-                      const catQuestions = filteredQuestions.filter(q => q.category === cat.id)
+                    categories
+                      .filter(cat => selectedSection === 'all' || cat.id === selectedSection)
+                      .map((cat) => {
+                        const catQuestions = filteredQuestions.filter(q => q.category === cat.id)
                       if (catQuestions.length === 0) return null
 
                       const isExpanded = expandedCats[cat.id]
