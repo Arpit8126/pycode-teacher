@@ -119,7 +119,12 @@ export default function CreateCodeathonPage() {
           .order('id', { ascending: true })
 
         if (!error && data && data.length > 0) {
-          setQuestions(data)
+          const localMap = new Map(LOCAL_QUESTIONS.map(q => [q.id, q.category]))
+          const mappedQuestions = data.map((q: any) => ({
+            ...q,
+            category: localMap.get(q.id) || q.category
+          }))
+          setQuestions(mappedQuestions)
         }
       } catch (err) {
         console.error('Failed to fetch DB questions, using local seeding:', err)
