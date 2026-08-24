@@ -616,8 +616,8 @@ export default function CreateCodeathonPage() {
             <div className="space-y-6 animate-scale-in">
               
               {/* Question Selection Card */}
-              <div className="bg-white dark:bg-[#0c0c0e] border border-hairline dark:border-[#1e1e24] rounded-[1.5rem] shadow-sm dark:shadow-xl overflow-hidden flex flex-col">
-                <div className="p-5 border-b border-hairline dark:border-[#1e1e24] bg-surface-soft dark:bg-[#08080a] flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+              <div className="bg-white dark:bg-[#0c0c0e] border border-hairline dark:border-[#1e1e24] rounded-[1.5rem] shadow-sm dark:shadow-xl flex flex-col">
+                <div className="p-5 border-b border-hairline dark:border-[#1e1e24] bg-surface-soft dark:bg-[#08080a] flex flex-col sm:flex-row justify-between sm:items-center gap-3 rounded-t-[1.5rem]">
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-[#cc785c]" />
                     <h3 className="text-sm font-bold uppercase tracking-wider text-ink dark:text-white">
@@ -715,7 +715,7 @@ export default function CreateCodeathonPage() {
                 </div>
 
                 {/* Challenges listing container */}
-                <div className="p-5 space-y-3 overflow-y-auto max-h-[500px] bg-white dark:bg-[#0c0c0e]">
+                <div className="p-5 space-y-3 overflow-y-auto max-h-[500px] bg-white dark:bg-[#0c0c0e] rounded-b-[1.5rem]">
                   {loadingQuestions ? (
                     <div className="space-y-3 animate-pulse">
                       {[...Array(4)].map((_, i) => (
