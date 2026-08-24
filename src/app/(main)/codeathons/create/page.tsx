@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LOCAL_QUESTIONS } from '@/lib/localQuestions'
-import { Calendar, Clock, Check, ArrowRight, FolderKanban, ShieldCheck, Search, Eye, X, BookOpen, AlertCircle } from 'lucide-react'
+import { Calendar, Clock, Check, ArrowRight, FolderKanban, ShieldCheck, Search, Eye, X, BookOpen, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react'
 import { enrichQuestionDetails } from '@/lib/questionFormatter'
 
 export default function CreateCodeathonPage() {
@@ -15,6 +15,39 @@ export default function CreateCodeathonPage() {
   const [questions, setQuestions] = useState<any[]>(LOCAL_QUESTIONS)
   const [loadingQuestions, setLoadingQuestions] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+
+  const categories = [
+    { id: 'python-ifelse', name: '1. Control Flow (If/Else)', desc: 'Boolean expressions, relational operators, conditional branching' },
+    { id: 'python-loops', name: '2. Loops & Math Logic', desc: 'For/while iterations, primes, Fibonacci, and number properties' },
+    { id: 'python-patterns', name: '3. Pattern Printing', desc: 'Nested loops generating stars, numbers, and character grids' },
+    { id: 'python-strings', name: '4. String Methods & Algorithms', desc: 'Slicing, splits, joins, substring indexing, and string algorithms' },
+    { id: 'python-lists-arrays', name: '5. Lists & Array Algorithms', desc: 'List comprehensions, rotation, chunking, binary search, sorting, two-pointer techniques' },
+    { id: 'python-dicts', name: '6. Dictionaries & Sets', desc: 'Frequency count, hash maps, key-value lookup operations' },
+    { id: 'python-oop', name: '7. OOP, Lambdas & Exceptions', desc: 'Classes, encapsulation, inheritance, property decorators, dunders, custom errors' },
+    { id: 'numpy', name: '8. NumPy Scientific Computing', desc: 'N-dimensional arrays, mathematical vectorization, matrix transformations' },
+    { id: 'pandas', name: '9. Pandas Data Science & Analysis', desc: 'DataFrames, null handling, indexing, group-by, merging, filtering datasets' },
+    { id: 'matplotlib-seaborn', name: '10. Matplotlib & Seaborn Visuals', desc: 'Bar plots, line charts, scatter plots, canvas styling, and distributions' }
+  ]
+
+  const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({
+    'python-ifelse': true,
+    'python-loops': true,
+    'python-patterns': true,
+    'python-strings': true,
+    'python-lists-arrays': true,
+    'python-dicts': true,
+    'python-oop': true,
+    'numpy': true,
+    'pandas': true,
+    'matplotlib-seaborn': true
+  })
+
+  const toggleCategory = (catId: string) => {
+    setExpandedCats(prev => ({
+      ...prev,
+      [catId]: !prev[catId]
+    }))
+  }
 
   // Form inputs
   const [title, setTitle] = useState('')
@@ -607,61 +640,97 @@ export default function CreateCodeathonPage() {
                       <p className="text-xs font-light">No matching questions found in library.</p>
                     </div>
                   ) : (
-                    filteredQuestions.map((q) => {
-                      const isChecked = selectedIds.has(q.id)
+                    categories.map((cat) => {
+                      const catQuestions = filteredQuestions.filter(q => q.category === cat.id)
+                      if (catQuestions.length === 0) return null
 
-                      let diffColor = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25'
-                      if (q.difficulty === 'medium' || q.difficulty === 'moderate') {
-                        diffColor = 'bg-amber-500/10 text-amber-600 dark:text-amber-440 border-emerald-500/25'
-                      } else if (q.difficulty === 'hard') {
-                        diffColor = 'bg-rose-500/10 text-rose-600 dark:text-rose-455 border-rose-500/25'
-                      }
+                      const isExpanded = expandedCats[cat.id]
+                      const catSelectedCount = catQuestions.filter(q => selectedIds.has(q.id)).length
 
                       return (
-                        <div
-                          key={q.id}
-                          onClick={() => handleToggleQuestion(q.id)}
-                          className={`p-4 rounded-2xl border transition-all flex items-center justify-between group cursor-pointer ${
-                            isChecked 
-                              ? 'border-primary bg-primary/[0.02] dark:bg-[#cc785c]/[0.05] shadow-sm' 
-                              : 'border-hairline dark:border-[#1e1e24] bg-white dark:bg-[#060608] hover:bg-surface-soft dark:hover:bg-[#0e0e12] hover:border-gray-400 dark:hover:border-gray-600'
-                          }`}
-                        >
-                          <div className="space-y-1.5 flex-1 min-w-0 pr-4">
-                            <h4 className="text-sm font-bold text-ink dark:text-white truncate transition-colors">{q.title}</h4>
-                            <div className="flex items-center gap-3 text-xs text-muted dark:text-gray-500">
-                              <span className="capitalize font-light">{q.category.replace('-', ' ')}</span>
-                              <span>&#8226;</span>
-                              <span className={`px-2 py-0.5 rounded-full border text-[10px] uppercase font-bold tracking-widest ${diffColor}`}>{q.difficulty}</span>
-                              <span>&#8226;</span>
-                              <span className="text-muted dark:text-gray-400 font-bold">{q.points} PTS</span>
+                        <div key={cat.id} className="border border-hairline dark:border-[#1e1e24] bg-white dark:bg-[#0c0c0e] rounded-2xl overflow-hidden shadow-sm transition-all mb-4">
+                          <button
+                            type="button"
+                            onClick={() => toggleCategory(cat.id)}
+                            className="w-full px-5 py-3.5 flex items-center justify-between text-left cursor-pointer hover:bg-surface-soft dark:hover:bg-[#0e0e12] transition-all bg-canvas/30 dark:bg-[#060608]/30"
+                          >
+                            <div className="flex items-center gap-2 select-none">
+                              <span className="text-xs font-bold text-ink dark:text-white tracking-tight">{cat.name}</span>
+                              {catSelectedCount > 0 && (
+                                <span className="px-2 py-0.5 text-[9px] font-bold text-[#cc785c] bg-[#cc785c]/10 rounded-full">
+                                  {catSelectedCount} Selected
+                                </span>
+                              )}
                             </div>
-                          </div>
+                            {isExpanded ? (
+                              <ChevronDown className="w-4 h-4 text-gray-400" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4 text-gray-400" />
+                            )}
+                          </button>
 
-                          <div className="flex items-center gap-3 shrink-0">
-                            {/* Preview button */}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setPreviewQuestion(q)
-                              }}
-                              className="px-3 py-1.5 rounded-xl border border-hairline dark:border-[#1e1e24] bg-canvas dark:bg-[#0e0e12] hover:bg-surface-soft dark:hover:bg-[#1e1e24] text-xs font-bold text-ink dark:text-white cursor-pointer transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-                            >
-                              Preview
-                            </button>
+                          {isExpanded && (
+                            <div className="p-4 space-y-3 border-t border-hairline dark:border-[#1e1e24] bg-white dark:bg-[#0c0c0e]">
+                              {catQuestions.map((q) => {
+                                const isChecked = selectedIds.has(q.id)
 
-                            {/* Custom styled checkbox */}
-                            <div 
-                              className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
-                                isChecked 
-                                  ? 'bg-[#cc785c] border-[#cc785c] text-white scale-105 shadow-md shadow-[#cc785c]/10' 
-                                  : 'border-gray-300 dark:border-[#1e1e24] bg-white dark:bg-[#060608] hover:border-gray-400 dark:hover:border-gray-550'
-                              }`}
-                            >
-                              {isChecked && <Check className="w-3 h-3 stroke-[2.5] text-white" />}
+                                let diffColor = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25'
+                                if (q.difficulty === 'medium' || q.difficulty === 'moderate') {
+                                  diffColor = 'bg-amber-500/10 text-amber-600 dark:text-amber-440 border-emerald-500/25'
+                                } else if (q.difficulty === 'hard') {
+                                  diffColor = 'bg-rose-500/10 text-rose-600 dark:text-rose-455 border-rose-500/25'
+                                }
+
+                                return (
+                                  <div
+                                    key={q.id}
+                                    onClick={() => handleToggleQuestion(q.id)}
+                                    className={`p-4 rounded-2xl border transition-all flex items-center justify-between group cursor-pointer ${
+                                      isChecked 
+                                        ? 'border-primary bg-primary/[0.02] dark:bg-[#cc785c]/[0.05] shadow-sm' 
+                                        : 'border-hairline dark:border-[#1e1e24] bg-white dark:bg-[#060608] hover:bg-surface-soft dark:hover:bg-[#0e0e12] hover:border-gray-400 dark:hover:border-gray-600'
+                                    }`}
+                                  >
+                                    <div className="space-y-1.5 flex-1 min-w-0 pr-4">
+                                      <h4 className="text-sm font-bold text-ink dark:text-white truncate transition-colors">{q.title}</h4>
+                                      <div className="flex items-center gap-3 text-xs text-muted dark:text-gray-500">
+                                        <span className="capitalize font-light">{q.category.replace('-', ' ')}</span>
+                                        <span>&#8226;</span>
+                                        <span className={`px-2 py-0.5 rounded-full border text-[10px] uppercase font-bold tracking-widest ${diffColor}`}>{q.difficulty}</span>
+                                        <span>&#8226;</span>
+                                        <span className="text-muted dark:text-gray-400 font-bold">{q.points} PTS</span>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 shrink-0">
+                                      {/* Preview button */}
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          setPreviewQuestion(q)
+                                        }}
+                                        className="px-3 py-1.5 rounded-xl border border-hairline dark:border-[#1e1e24] bg-canvas dark:bg-[#0e0e12] hover:bg-surface-soft dark:hover:bg-[#1e1e24] text-xs font-bold text-ink dark:text-white cursor-pointer transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                                      >
+                                        Preview
+                                      </button>
+
+                                      {/* Custom styled checkbox */}
+                                      <div 
+                                        className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+                                          isChecked 
+                                            ? 'bg-[#cc785c] border-[#cc785c] text-white scale-105 shadow-md shadow-[#cc785c]/10' 
+                                            : 'border-gray-300 dark:border-[#1e1e24] bg-white dark:bg-[#060608] hover:border-gray-400 dark:hover:border-gray-550'
+                                        }`}
+                                      >
+                                        {isChecked && <Check className="w-3.5 h-3.5 stroke-[2.5] text-white" />}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              })}
                             </div>
-                          </div>
+                          )}
                         </div>
                       )
                     })
