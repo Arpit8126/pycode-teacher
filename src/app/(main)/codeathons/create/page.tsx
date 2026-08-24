@@ -119,11 +119,17 @@ export default function CreateCodeathonPage() {
           .order('id', { ascending: true })
 
         if (!error && data && data.length > 0) {
-          const localMap = new Map(LOCAL_QUESTIONS.map(q => [q.id, q.category]))
-          const mappedQuestions = data.map((q: any) => ({
-            ...q,
-            category: localMap.get(q.id) || q.category
-          }))
+          const localMap = new Map(LOCAL_QUESTIONS.map(q => [q.id, q]))
+          const mappedQuestions = data.map((q: any) => {
+            const localQ = localMap.get(q.id)
+            return {
+              ...q,
+              title: localQ?.title || q.title,
+              category: localQ?.category || q.category,
+              description: localQ?.description || q.description,
+              starter_code: localQ?.starter_code || q.starter_code
+            }
+          })
           setQuestions(mappedQuestions)
         }
       } catch (err) {
